@@ -8,11 +8,13 @@ from os.path import isfile, join
 
 from fire_animation import fire
 from curses_tools import draw_frame, get_frame_size, read_controls
+from space_garbage import fly_garbage
 
 
 TIC_TIMEOUT = 0.1
 ANIM_DIR = 'anim_frames'
 ROCKET_FRAMES_DIR = join(ANIM_DIR, 'rocket')
+GARBAGE_FRAMES_DIR = join(ANIM_DIR, 'garbage')
 
 
 def load_frame_from_file(filename):
@@ -149,6 +151,14 @@ def main(canvas):
         rocket_frames
     )
     coroutines.append(coro_rocket_anim)
+
+    garbage_frames = get_frames_list(GARBAGE_FRAMES_DIR)
+    garbage_coro = [
+        fly_garbage(canvas, (column * 10) + 5, frame)
+        for column, frame in enumerate(garbage_frames)
+    ]
+
+    coroutines.extend(garbage_coro)
 
     canvas.refresh()
 
