@@ -110,6 +110,26 @@ async def animate_frames(canvas, start_row, start_column, frames):
         current_frame = next(frames_cycle)
 
 
+async def fill_orbit_with_garbage(canvas, coros, garbage_frames):
+    _, columns_number = canvas.getmaxyx()
+    border_size = 1
+    while True:
+        current_trash_frame = random.choice(garbage_frames)
+        _, trash_column_size = get_frame_size(current_trash_frame)
+        random_column = random.randint(
+            border_size,
+            columns_number - border_size
+        )
+        actual_column = min(
+            columns_number - trash_column_size - border_size,
+            random_column + trash_column_size - border_size,
+        )
+
+        trash_coro = fly_garbage(canvas, actual_column, current_trash_frame)
+        coros.append(trash_coro)
+        await go_to_sleep(2)
+
+
 def run_event_loop(coroutines):
     while True:
         index = 0
@@ -153,12 +173,9 @@ def main(canvas):
     coroutines.append(coro_rocket_anim)
 
     garbage_frames = get_frames_list(GARBAGE_FRAMES_DIR)
-    garbage_coro = [
-        fly_garbage(canvas, (column * 10) + 5, frame)
-        for column, frame in enumerate(garbage_frames)
-    ]
+    garbage_coro = fill_orbit_with_garbage(canvas, coroutines, garbage_frames)
 
-    coroutines.extend(garbage_coro)
+    coroutines.append(garbage_coro)
 
     canvas.refresh()
 
