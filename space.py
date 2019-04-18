@@ -30,8 +30,8 @@ def get_frames_list(dirnames):
     ]
 
 
-async def go_to_sleep(seconds):
-    iteration_count = int(seconds * 10)
+async def sleep(tics=1):
+    iteration_count = int(tics * 10)
     for _ in range(iteration_count):
         await asyncio.sleep(0)
 
@@ -40,22 +40,22 @@ async def blink(canvas, row, column, symbol='*', offset=1):
     while True:
         if offset == 0:
             canvas.addstr(row, column, symbol, curses.A_DIM)
-            await go_to_sleep(2)
+            await sleep(2)
             offset += 1
 
         if offset == 1:
             canvas.addstr(row, column, symbol)
-            await go_to_sleep(0.3)
+            await sleep(0.3)
             offset += 1
 
         if offset == 2:
             canvas.addstr(row, column, symbol, curses.A_BOLD)
-            await go_to_sleep(0.5)
+            await sleep(0.5)
             offset += 1
 
         if offset == 3:
             canvas.addstr(row, column, symbol)
-            await go_to_sleep(0.3)
+            await sleep(0.3)
             offset = 0
 
 
@@ -97,7 +97,7 @@ async def animate_frames(canvas, start_row, start_column, frames):
         draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame)
         canvas.refresh()
 
-        await go_to_sleep(0.3)
+        await sleep(0.3)
 
         draw_frame(
             canvas,
@@ -127,7 +127,7 @@ async def fill_orbit_with_garbage(canvas, coros, garbage_frames):
 
         trash_coro = fly_garbage(canvas, actual_column, current_trash_frame)
         coros.append(trash_coro)
-        await go_to_sleep(2)
+        await sleep(2)
 
 
 def run_event_loop(coroutines):
