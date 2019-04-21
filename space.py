@@ -10,7 +10,7 @@ from fire_animation import fire
 from curses_tools import draw_frame, get_frame_size, read_controls
 from obstacles import show_obstacles
 from physics import update_speed
-from space_garbage import fly_garbage, obstacles
+from space_garbage import fly_garbage, obstacles_actual, obstacles_in_last_collisions
 
 
 TIC_TIMEOUT = 0.1
@@ -124,8 +124,7 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
         frame_pos_x = max(frame_pos_x, border_size)
         frame_pos_y = max(frame_pos_y, border_size)
 
-        draw_frame(canvas, frame_pos_y, frame_pos_x,
-                   frame_container[0])
+        draw_frame(canvas, frame_pos_y, frame_pos_x, frame_container[0])
 
         canvas.refresh()
 
@@ -197,7 +196,7 @@ def main(canvas):
         frame_container
     )
 
-    show_obstacles_coro = show_obstacles(canvas, obstacles)
+    show_obstacles_coro = show_obstacles(canvas, obstacles_actual)
 
     coroutines.append(rocket_anim_coro)
     coroutines.append(rocket_control_coro)

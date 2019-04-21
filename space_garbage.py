@@ -3,13 +3,17 @@ import asyncio
 from curses_tools import draw_frame, get_frame_size
 from  obstacles import Obstacle
 
-obstacles = []
+
+obstacles_actual = []
+obstacles_in_last_collisions = []
 
 
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
-    global obstacles
     """Animate garbage, flying from top to bottom. Сolumn position will stay
     same, as specified on start."""
+    global obstacles_actual
+    global obstacles_in_last_collisions
+    
     rows_number, columns_number = canvas.getmaxyx()
 
     column = max(column, 0)
@@ -19,14 +23,19 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
     frame_row, frame_column = get_frame_size(garbage_frame)
     obstacle = Obstacle(row, column, frame_row, frame_column)
-    obstacles.append(obstacle)
+    obstacles_actual.append(obstacle)
 
-    while row < rows_number:
-        draw_frame(canvas, row, column, garbage_frame)
-        await asyncio.sleep(0)
-        draw_frame(canvas, row, column, garbage_frame, negative=True)
-        row += speed
-        obstacle.row = row
-        canvas.border()
-
-    obstacles.remove(obstacle)
+    try:
+        while row < rows_number:
+            if obstacle in obstacles_in_last_collisions:
+                return
+            draw_frame(canvas, row, column, garbage_frame)
+            await asyncio.sleep(0)
+            draw_frame(canvas, row, column, garbage_frame, negative=True)
+            row += speed
+            obstacle.row = row
+            canvas.border()
+    finally:
+        obstacles_actual.remove(obstacle)
+        if len(obstacles_in_last_collisions) > 0:
+            obstacles_in_last_collisions.clear()
