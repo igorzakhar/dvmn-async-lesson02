@@ -8,8 +8,9 @@ from os.path import isfile, join
 
 from fire_animation import fire
 from curses_tools import draw_frame, get_frame_size, read_controls
-from space_garbage import fly_garbage
+from obstacles import show_obstacles
 from physics import update_speed
+from space_garbage import fly_garbage, obstacles
 
 
 TIC_TIMEOUT = 0.1
@@ -196,9 +197,12 @@ def main(canvas):
         frame_container
     )
 
+    show_obstacles_coro = show_obstacles(canvas, obstacles)
+
     coroutines.append(rocket_anim_coro)
     coroutines.append(rocket_control_coro)
     coroutines.append(garbage_coro)
+    coroutines.append(show_obstacles_coro)
 
     canvas.refresh()
 
