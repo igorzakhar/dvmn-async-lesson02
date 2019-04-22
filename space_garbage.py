@@ -1,7 +1,7 @@
 import asyncio
 
 from curses_tools import draw_frame, get_frame_size
-from  obstacles import Obstacle
+from obstacles import Obstacle
 
 
 obstacles_actual = []
@@ -13,7 +13,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     same, as specified on start."""
     global obstacles_actual
     global obstacles_in_last_collisions
-    
+
     rows_number, columns_number = canvas.getmaxyx()
 
     column = max(column, 0)

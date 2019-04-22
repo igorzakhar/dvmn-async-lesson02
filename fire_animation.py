@@ -1,6 +1,7 @@
 import asyncio
 import curses
 
+from explosion import explode
 from space_garbage import obstacles_actual, obstacles_in_last_collisions
 
 
@@ -29,6 +30,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         for obstacle in obstacles_actual:
             if obstacle.has_collision(round(row), round(column)):
                 obstacles_in_last_collisions.append(obstacle)
+                await explode(canvas, obstacle.row, obstacle.column)
                 return
         canvas.addstr(round(row), round(column), symbol)
         await asyncio.sleep(0)

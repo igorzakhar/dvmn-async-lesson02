@@ -3,26 +3,26 @@ from curses_tools import draw_frame
 
 
 class Obstacle:
-    
+
     def __init__(self, row, column, rows_size=1, columns_size=1, uid=None):
         self.row = row
         self.column = column
         self.rows_size = rows_size
         self.columns_size = columns_size
         self.uid = uid
-    
+
     def get_bounding_box_frame(self):
         # increment box size to compensate obstacle movement
         rows, columns = self.rows_size + 1, self.columns_size + 1
         return '\n'.join(_get_bounding_box_lines(rows, columns))
-   
+
     def get_bounding_box_corner_pos(self):
         return self.row - 1, self.column - 1
-   
+
     def dump_bounding_box(self):
         row, column = self.get_bounding_box_corner_pos()
         return row, column, self.get_bounding_box_frame()
-        
+
     def has_collision(self, obj_corner_row, obj_corner_column, obj_size_rows=1, obj_size_columns=1):
         '''Determine if collision has occured. Return True or False.'''
         return has_collision(
@@ -43,13 +43,13 @@ def _get_bounding_box_lines(rows, columns):
 
 async def show_obstacles(canvas, obstacles):
     """Display bounding boxes of every obstacle in a list"""
-    
+
     while True:
         boxes = []
 
         for obstacle in obstacles:
             boxes.append(obstacle.dump_bounding_box())
-        
+
         for row, column, frame in boxes:
             draw_frame(canvas, row, column, frame)
 
