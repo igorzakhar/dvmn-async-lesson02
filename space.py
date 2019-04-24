@@ -3,34 +3,33 @@ import curses
 import itertools
 import random
 import time
-from os import listdir
-from os.path import isfile, join
+from os.path import join
 
 from fire_animation import fire
 from curses_tools import draw_frame, get_frame_size, read_controls
+from load_frames import load_frame_from_file, load_multiple_frames
 from obstacles import show_obstacles
 from physics import update_speed
 from space_garbage import fly_garbage, obstacles_actual
 
 
 TIC_TIMEOUT = 0.1
+BORDER_SIZE = 1
 ANIM_DIR = 'anim_frames'
 ROCKET_FRAMES_DIR = join(ANIM_DIR, 'rocket')
 GARBAGE_FRAMES_DIR = join(ANIM_DIR, 'garbage')
-BORDER_SIZE = 1
+GAME_OVER_FRAME = load_frame_from_file(
+    join(ANIM_DIR, 'game_over', 'game_over.txt')
+)
 
 
-def load_frame_from_file(filename):
-    with open(filename, 'r') as fd:
-        return fd.read()
-
-
-def get_frames_list(dirnames):
-    return [
-        load_frame_from_file(join(dirnames, file))
-        for file in listdir(dirnames)
-        if isfile(join(dirnames, file))
-    ]
+async def show_gameover(canvas, window_height, window_width, frame):
+    message_size_y, message_size_x = get_frame_size(frame)
+    message_pos_y = round(window_height / 2) - round(message_size_y / 2)
+    message_pos_x = round(window_width / 2) - round(message_size_x / 2)
+    while True:
+        draw_frame(canvas, message_pos_y, message_pos_x, frame)
+        await asyncio.sleep(0)
 
 
 async def sleep(tics=1):
@@ -81,7 +80,7 @@ async def animate_spaceship(canvas, frames, frame_container):
 
 
 async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
-    height, width = canvas.getmaxyx()
+    window_height, window_width = canvas.getmaxyx()
     symbol_size = 0
     frame_size_y, frame_size_x = get_frame_size(frame_container[0])
     frame_pos_x = round(start_col) - round(frame_size_x / 2)
@@ -112,8 +111,8 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
         frame_x_max = frame_pos_x + frame_size_x
         frame_y_max = frame_pos_y + frame_size_y
 
-        field_x_max = width - BORDER_SIZE
-        field_y_max = height - BORDER_SIZE
+        field_x_max = window_width - BORDER_SIZE
+        field_y_max = window_height - BORDER_SIZE
 
         frame_pos_x = min(frame_x_max, field_x_max) - frame_size_x
         frame_pos_y = min(frame_y_max, field_y_max) - frame_size_y
@@ -126,6 +125,17 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
         draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame)
         await asyncio.sleep(0)
         draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame, negative=True)
+
+        for obstacle in obstacles_actual:
+            if obstacle.has_collision(frame_pos_y, frame_pos_x):
+                game_over_coro = show_gameover(
+                    canvas,
+                    window_height,
+                    window_width,
+                    GAME_OVER_FRAME
+                )
+                coros.append(game_over_coro)
+                return
 
 
 async def fill_orbit_with_garbage(canvas, coros, garbage_frames):
@@ -168,19 +178,19 @@ def main(canvas):
     canvas.border()
     canvas.nodelay(True)
 
-    height, width = canvas.getmaxyx()
+    window_height, window_width = canvas.getmaxyx()
 
     coroutines = [
         blink(canvas, row, column, symbol, random.randint(0, 3))
-        for row, column, symbol in stars_generator(height, width)
+        for row, column, symbol in stars_generator(window_height, window_width)
     ]
 
-    garbage_frames = get_frames_list(GARBAGE_FRAMES_DIR)
+    garbage_frames = load_multiple_frames(GARBAGE_FRAMES_DIR)
     garbage_coro = fill_orbit_with_garbage(canvas, coroutines, garbage_frames)
 
-    rocket_frames = get_frames_list(ROCKET_FRAMES_DIR)
-    start_rocket_row = height
-    start_rocket_col = width / 2
+    rocket_frames = load_multiple_frames(ROCKET_FRAMES_DIR)
+    start_rocket_row = window_height
+    start_rocket_col = window_width / 2
 
     rocket_anim_coro = animate_spaceship(
         canvas,
