@@ -72,16 +72,17 @@ def stars_generator(height, width, number=50):
 
 async def animate_spaceship(canvas, frames, frame_container):
     frames_cycle = itertools.cycle(frames)
+
     while True:
         frame_container.clear()
         spaceship_frame = next(frames_cycle)
         frame_container.append(spaceship_frame)
-        await sleep(0.3)
+        await asyncio.sleep(0)
 
 
 async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
     height, width = canvas.getmaxyx()
-    symbol_size = 1
+    symbol_size = 0
     frame_size_y, frame_size_x = get_frame_size(frame_container[0])
     frame_pos_x = round(start_col) - round(frame_size_x / 2)
     frame_pos_y = start_row
@@ -89,11 +90,6 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
     row_speed, column_speed = 0, 0
 
     while True:
-
-        draw_frame(canvas, frame_pos_y, frame_pos_x,
-                   frame_container[0], negative=True)
-
-        await sleep(0.1)
 
         direction_y, direction_x, spacebar = read_controls(canvas)
 
@@ -125,9 +121,11 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
         frame_pos_x = max(frame_pos_x, BORDER_SIZE)
         frame_pos_y = max(frame_pos_y, BORDER_SIZE)
 
-        draw_frame(canvas, frame_pos_y, frame_pos_x, frame_container[0])
+        current_frame = frame_container[0]
 
-        canvas.refresh()
+        draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame, negative=True)
 
 
 async def fill_orbit_with_garbage(canvas, coros, garbage_frames):
@@ -150,7 +148,7 @@ async def fill_orbit_with_garbage(canvas, coros, garbage_frames):
         await sleep(2)
 
 
-def run_event_loop(coroutines):
+def run_event_loop(canvas, coroutines):
     while True:
         index = 0
         while index < len(coroutines):
@@ -160,7 +158,7 @@ def run_event_loop(coroutines):
             except StopIteration:
                 coroutines.remove(coro)
             index += 1
-
+        canvas.refresh()
         time.sleep(TIC_TIMEOUT)
 
 
@@ -204,9 +202,7 @@ def main(canvas):
     coroutines.append(garbage_coro)
     coroutines.append(show_obstacles_coro)
 
-    canvas.refresh()
-
-    run_event_loop(coroutines)
+    run_event_loop(canvas, coroutines)
 
 
 if __name__ == '__main__':
