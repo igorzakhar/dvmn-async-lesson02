@@ -60,10 +60,10 @@ async def blink(canvas, row, column, symbol='*', offset=1):
             offset = 0
 
 
-def stars_generator(height, width, number=50):
-    for star in range(number):
-        y_pos = random.randint(1, height - 2)
-        x_pos = random.randint(1, width - 2)
+def stars_generator(height, width, border_size, number_stars=50):
+    for star in range(number_stars):
+        y_pos = random.randint(border_size, height - border_size)
+        x_pos = random.randint(border_size, width - border_size)
         symbol = random.choice(['+', '*', '.', ':'])
         yield y_pos, x_pos, symbol
 
@@ -185,7 +185,11 @@ def main(canvas):
 
     coroutines = [
         blink(canvas, row, column, symbol, random.randint(0, 3))
-        for row, column, symbol in stars_generator(window_height, window_width)
+        for row, column, symbol in stars_generator(
+            window_height,
+            window_width,
+            border_size
+        )
     ]
 
     garbage_frames = load_multiple_frames(GARBAGE_FRAMES_DIR)
