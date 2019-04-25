@@ -14,7 +14,6 @@ from space_garbage import fly_garbage, obstacles_actual
 
 
 TIC_TIMEOUT = 0.1
-BORDER_SIZE = 1
 ANIM_DIR = 'anim_frames'
 ROCKET_FRAMES_DIR = join(ANIM_DIR, 'rocket')
 GARBAGE_FRAMES_DIR = join(ANIM_DIR, 'garbage')
@@ -79,12 +78,15 @@ async def animate_spaceship(canvas, frames, frame_container):
         await asyncio.sleep(0)
 
 
-async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
+async def run_spaceship(canvas, coros, row, col, frame_container, border_size):
     window_height, window_width = canvas.getmaxyx()
+
     symbol_size = 0
+
     frame_size_y, frame_size_x = get_frame_size(frame_container[0])
-    frame_pos_x = round(start_col) - round(frame_size_x / 2)
-    frame_pos_y = start_row
+
+    frame_pos_x = round(col) - round(frame_size_x / 2)
+    frame_pos_y = row
 
     row_speed, column_speed = 0, 0
 
@@ -111,14 +113,14 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
         frame_x_max = frame_pos_x + frame_size_x
         frame_y_max = frame_pos_y + frame_size_y
 
-        field_x_max = window_width - BORDER_SIZE
-        field_y_max = window_height - BORDER_SIZE
+        field_x_max = window_width - border_size
+        field_y_max = window_height - border_size
 
         frame_pos_x = min(frame_x_max, field_x_max) - frame_size_x
         frame_pos_y = min(frame_y_max, field_y_max) - frame_size_y
 
-        frame_pos_x = max(frame_pos_x, BORDER_SIZE)
-        frame_pos_y = max(frame_pos_y, BORDER_SIZE)
+        frame_pos_x = max(frame_pos_x, border_size)
+        frame_pos_y = max(frame_pos_y, border_size)
 
         current_frame = frame_container[0]
 
@@ -138,19 +140,19 @@ async def run_spaceship(canvas, coros, start_row, start_col, frame_container):
                 return
 
 
-async def fill_orbit_with_garbage(canvas, coros, garbage_frames):
+async def fill_orbit_with_garbage(canvas, coros, garbage_frames, border_size):
     _, columns_number = canvas.getmaxyx()
 
     while True:
         current_trash_frame = random.choice(garbage_frames)
         _, trash_column_size = get_frame_size(current_trash_frame)
         random_column = random.randint(
-            BORDER_SIZE,
-            columns_number - BORDER_SIZE
+            border_size,
+            columns_number - border_size
         )
         actual_column = min(
-            columns_number - trash_column_size - BORDER_SIZE,
-            random_column + trash_column_size - BORDER_SIZE,
+            columns_number - trash_column_size - border_size,
+            random_column + trash_column_size - border_size,
         )
 
         trash_coro = fly_garbage(canvas, actual_column, current_trash_frame)
@@ -176,6 +178,7 @@ def main(canvas):
     frame_container = []
     curses.curs_set(False)
     canvas.border()
+    border_size = 1
     canvas.nodelay(True)
 
     window_height, window_width = canvas.getmaxyx()
@@ -186,9 +189,15 @@ def main(canvas):
     ]
 
     garbage_frames = load_multiple_frames(GARBAGE_FRAMES_DIR)
-    garbage_coro = fill_orbit_with_garbage(canvas, coroutines, garbage_frames)
+    garbage_coro = fill_orbit_with_garbage(
+        canvas,
+        coroutines,
+        garbage_frames,
+        border_size
+    )
 
     rocket_frames = load_multiple_frames(ROCKET_FRAMES_DIR)
+
     start_rocket_row = window_height
     start_rocket_col = window_width / 2
 
@@ -202,7 +211,8 @@ def main(canvas):
         coroutines,
         start_rocket_row,
         start_rocket_col,
-        frame_container
+        frame_container,
+        border_size
     )
 
     show_obstacles_coro = show_obstacles(canvas, obstacles_actual)
