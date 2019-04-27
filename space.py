@@ -23,6 +23,29 @@ GAME_OVER_FRAME = load_frame_from_file(
 )
 
 
+async def count_years(year_counter, level_duration_sec=10):
+    while True:
+        await sleep(level_duration_sec)
+        year_counter[0] += 1
+
+
+async def show_year_counter(canvas, year_counter, start_year=1957):
+    canvas_height, canvas_width = canvas.getmaxyx()
+
+    counter_lenght = 9
+    year_str_pos_y = 1
+    year_str_pos_x = round(canvas_width / 2) - round(counter_lenght / 2)
+
+    while True:
+        current_year = start_year + year_counter[0]
+        canvas.addstr(
+            year_str_pos_y,
+            year_str_pos_x,
+            'Year {}'.format(current_year)
+        )
+        await asyncio.sleep(0)
+
+
 async def show_gameover(canvas, window_height, window_width, frame):
     message_size_y, message_size_x = get_frame_size(frame)
     message_pos_y = round(window_height / 2) - round(message_size_y / 2)
@@ -238,10 +261,18 @@ def main(canvas):
 
     show_obstacles_coro = show_obstacles(game_area, obstacles_actual)
 
+    year = [0]
+    count_years_coro = count_years(year)
+    show_year_counter_coro = show_year_counter(status_bar, year)
+
     coroutines.append(rocket_anim_coro)
     coroutines.append(rocket_control_coro)
+
     coroutines.append(garbage_coro)
     coroutines.append(show_obstacles_coro)
+
+    coroutines.append(count_years_coro)
+    coroutines.append(show_year_counter_coro)
 
     screens = (canvas, game_area, status_bar)
     run_event_loop(screens, coroutines)
