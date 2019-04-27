@@ -1,5 +1,6 @@
 import asyncio
 import curses
+from functools import partial
 import itertools
 import random
 import time
@@ -60,15 +61,16 @@ async def blink(canvas, row, column, symbol='*', offset=1):
             offset = 0
 
 
-def stars_generator(height, width, border_size, number_stars=50):
+def stars_generator(canvas, border_size, number_stars=50):
+    height, width = canvas.getmaxyx()
     for star in range(number_stars):
-        y_pos = random.randint(border_size, height - border_size)
-        x_pos = random.randint(border_size, width - border_size)
+        y_pos = random.randint(border_size, height - border_size - 1)
+        x_pos = random.randint(border_size, width - border_size - 1)
         symbol = random.choice(['+', '*', '.', ':'])
         yield y_pos, x_pos, symbol
 
 
-async def animate_spaceship(canvas, frames, frame_container):
+async def animate_spaceship(frames, frame_container):
     frames_cycle = itertools.cycle(frames)
 
     while True:
@@ -78,21 +80,23 @@ async def animate_spaceship(canvas, frames, frame_container):
         await asyncio.sleep(0)
 
 
-async def run_spaceship(canvas, coros, row, col, frame_container, border_size):
+async def run_spaceship(canvas, coros, controls, frame_container, border_size):
     window_height, window_width = canvas.getmaxyx()
+    start_rocket_row = window_height - border_size
+    start_rocket_col = window_width / 2
 
     symbol_size = 0
 
     frame_size_y, frame_size_x = get_frame_size(frame_container[0])
 
-    frame_pos_x = round(col) - round(frame_size_x / 2)
-    frame_pos_y = row
+    frame_pos_x = round(start_rocket_col) - round(frame_size_x / 2)
+    frame_pos_y = start_rocket_row
 
     row_speed, column_speed = 0, 0
 
     while True:
 
-        direction_y, direction_x, spacebar = read_controls(canvas)
+        direction_y, direction_x, spacebar = controls()
 
         if spacebar:
             shot_pos_x = frame_pos_x + round(frame_size_x / 2)
@@ -126,7 +130,8 @@ async def run_spaceship(canvas, coros, row, col, frame_container, border_size):
 
         draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame)
         await asyncio.sleep(0)
-        draw_frame(canvas, frame_pos_y, frame_pos_x, current_frame, negative=True)
+        draw_frame(canvas, frame_pos_y, frame_pos_x,
+                   current_frame, negative=True)
 
         for obstacle in obstacles_actual:
             if obstacle.has_collision(frame_pos_y, frame_pos_x):
@@ -160,7 +165,7 @@ async def fill_orbit_with_garbage(canvas, coros, garbage_frames, border_size):
         await sleep(2)
 
 
-def run_event_loop(canvas, coroutines):
+def run_event_loop(screens, coroutines):
     while True:
         index = 0
         while index < len(coroutines):
@@ -170,63 +175,76 @@ def run_event_loop(canvas, coroutines):
             except StopIteration:
                 coroutines.remove(coro)
             index += 1
-        canvas.refresh()
+        for screen in screens:
+            screen.refresh()
         time.sleep(TIC_TIMEOUT)
 
 
 def main(canvas):
     frame_container = []
     curses.curs_set(False)
-    canvas.border()
-    border_size = 1
     canvas.nodelay(True)
+    border_size = 1
+    main_window_height, main_window_width = canvas.getmaxyx()
 
-    window_height, window_width = canvas.getmaxyx()
+    status_bar_height = 2
+    sb_begin_y = sb_begin_x = 0
+    status_bar = canvas.derwin(
+        status_bar_height,
+        main_window_width,
+        sb_begin_y,
+        sb_begin_x
+    )
+
+    game_area_height = main_window_height - status_bar_height - border_size
+    game_area_width = main_window_width
+    ga_begin_y = status_bar_height + border_size
+    ga_begin_x = 0
+    game_area = canvas.derwin(
+        game_area_height,
+        game_area_width,
+        ga_begin_y,
+        ga_begin_x
+    )
+    game_area.border()
 
     coroutines = [
-        blink(canvas, row, column, symbol, random.randint(0, 3))
-        for row, column, symbol in stars_generator(
-            window_height,
-            window_width,
-            border_size
-        )
+        blink(game_area, row, column, symbol, random.randint(0, 3))
+        for row, column, symbol in stars_generator(game_area, border_size)
     ]
 
     garbage_frames = load_multiple_frames(GARBAGE_FRAMES_DIR)
+
     garbage_coro = fill_orbit_with_garbage(
-        canvas,
+        game_area,
         coroutines,
         garbage_frames,
         border_size
     )
 
+    spaceship_controls = partial(read_controls, canvas=canvas)
     rocket_frames = load_multiple_frames(ROCKET_FRAMES_DIR)
-
-    start_rocket_row = window_height
-    start_rocket_col = window_width / 2
-
     rocket_anim_coro = animate_spaceship(
-        canvas,
         rocket_frames,
         frame_container
     )
     rocket_control_coro = run_spaceship(
-        canvas,
+        game_area,
         coroutines,
-        start_rocket_row,
-        start_rocket_col,
+        spaceship_controls,
         frame_container,
-        border_size
+        border_size,
     )
 
-    show_obstacles_coro = show_obstacles(canvas, obstacles_actual)
+    show_obstacles_coro = show_obstacles(game_area, obstacles_actual)
 
     coroutines.append(rocket_anim_coro)
     coroutines.append(rocket_control_coro)
     coroutines.append(garbage_coro)
     coroutines.append(show_obstacles_coro)
 
-    run_event_loop(canvas, coroutines)
+    screens = (canvas, game_area, status_bar)
+    run_event_loop(screens, coroutines)
 
 
 if __name__ == '__main__':
