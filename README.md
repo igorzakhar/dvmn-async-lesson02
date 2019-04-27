@@ -28,7 +28,7 @@ $ cd space
 ```
 Запуск программы:
 ```
-$ python3 space.py
+$ python3 main.py
 ```
 
 # Цели проекта
