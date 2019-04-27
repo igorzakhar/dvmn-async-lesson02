@@ -9,7 +9,6 @@ from os.path import join
 from fire_animation import fire
 from curses_tools import draw_frame, get_frame_size, read_controls
 from load_frames import load_frame_from_file, load_multiple_frames
-from obstacles import show_obstacles
 from physics import update_speed
 from space_garbage import fly_garbage, obstacles_actual
 
@@ -269,7 +268,9 @@ def main(canvas):
         border_size,
     )
 
-    show_obstacles_coro = show_obstacles(game_area, obstacles_actual)
+    # from obstacles import show_obstacles
+    # show_obstacles_coro = show_obstacles(game_area, obstacles_actual)
+    # coroutines.append(show_obstacles_coro)
 
     count_years_coro = count_years(level)
     show_year_counter_coro = show_year_counter(status_bar, level)
@@ -278,7 +279,6 @@ def main(canvas):
     coroutines.append(rocket_control_coro)
 
     coroutines.append(garbage_coro)
-    coroutines.append(show_obstacles_coro)
 
     coroutines.append(count_years_coro)
     coroutines.append(show_year_counter_coro)
