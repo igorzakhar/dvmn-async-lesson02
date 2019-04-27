@@ -168,7 +168,9 @@ async def run_spaceship(canvas, coros, controls, frame_container, border_size):
                 return
 
 
-async def fill_orbit_with_garbage(canvas, coros, garbage_frames, border_size):
+async def fill_orbit_with_garbage(
+        canvas, coros, garbage_frames, level, border_size,
+        initial_timeout=5, complexity_factor=5, timeout_min=0.1):
     _, columns_number = canvas.getmaxyx()
 
     while True:
@@ -185,7 +187,13 @@ async def fill_orbit_with_garbage(canvas, coros, garbage_frames, border_size):
 
         trash_coro = fly_garbage(canvas, actual_column, current_trash_frame)
         coros.append(trash_coro)
-        await sleep(2)
+
+        timeout_step = level[0] / complexity_factor
+        garbage_respawn_timeout = initial_timeout - timeout_step
+
+        if garbage_respawn_timeout <= timeout_min:
+            garbage_respawn_timeout = timeout_min
+        await sleep(garbage_respawn_timeout)
 
 
 def run_event_loop(screens, coroutines):
@@ -205,6 +213,7 @@ def run_event_loop(screens, coroutines):
 
 def main(canvas):
     frame_container = []
+    level = [0]
     curses.curs_set(False)
     canvas.nodelay(True)
     border_size = 1
@@ -242,6 +251,7 @@ def main(canvas):
         game_area,
         coroutines,
         garbage_frames,
+        level,
         border_size
     )
 
@@ -261,9 +271,8 @@ def main(canvas):
 
     show_obstacles_coro = show_obstacles(game_area, obstacles_actual)
 
-    year = [0]
-    count_years_coro = count_years(year)
-    show_year_counter_coro = show_year_counter(status_bar, year)
+    count_years_coro = count_years(level)
+    show_year_counter_coro = show_year_counter(status_bar, level)
 
     coroutines.append(rocket_anim_coro)
     coroutines.append(rocket_control_coro)
