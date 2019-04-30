@@ -203,8 +203,10 @@ def run_event_loop(screens, coroutines):
             try:
                 coro.send(None)
             except StopIteration:
+                index = coroutines.index(coro)
                 coroutines.remove(coro)
-            index += 1
+            else:
+                index += 1
         for screen in screens:
             screen.refresh()
         time.sleep(TIC_TIMEOUT)
