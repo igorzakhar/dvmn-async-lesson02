@@ -268,10 +268,6 @@ def main(canvas):
         border_size,
     )
 
-    # from obstacles import show_obstacles
-    # show_obstacles_coro = show_obstacles(game_area, obstacles_actual)
-    # coroutines.append(show_obstacles_coro)
-
     count_years_coro = count_years(level)
     show_year_counter_coro = show_year_counter(status_bar, level)
 
