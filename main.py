@@ -22,7 +22,7 @@ GAME_OVER_FRAME = load_frame_from_file(
 )
 
 
-async def count_years(year_counter, level_duration_sec=10):
+async def count_years(year_counter, level_duration_sec=3):
     while True:
         await sleep(level_duration_sec)
         year_counter[0] += 1
@@ -168,12 +168,11 @@ async def run_spaceship(canvas, coros, controls, frame_container, border_size):
 
 
 async def fill_orbit_with_garbage(
-        canvas, coros, garbage_frames, level, border_size,
-        initial_timeout=5, complexity_factor=5, timeout_min=0.1):
+        canvas, coros, level, frames, border_size, timeout_minimal=0.1):
     _, columns_number = canvas.getmaxyx()
 
     while True:
-        current_trash_frame = random.choice(garbage_frames)
+        current_trash_frame = random.choice(frames)
         _, trash_column_size = get_frame_size(current_trash_frame)
         random_column = random.randint(
             border_size,
@@ -187,12 +186,17 @@ async def fill_orbit_with_garbage(
         trash_coro = fly_garbage(canvas, actual_column, current_trash_frame)
         coros.append(trash_coro)
 
-        timeout_step = level[0] / complexity_factor
-        garbage_respawn_timeout = initial_timeout - timeout_step
+        garbage_respawn_timeout = calculate_respawn_timeout(level)
 
-        if garbage_respawn_timeout <= timeout_min:
-            garbage_respawn_timeout = timeout_min
+        if garbage_respawn_timeout <= timeout_minimal:
+            garbage_respawn_timeout = timeout_minimal
         await sleep(garbage_respawn_timeout)
+
+
+def calculate_respawn_timeout(level, initial_timeout=5, complexity_factor=5):
+    timeout_step = level[0] / complexity_factor
+    respawn_timeout = initial_timeout - timeout_step
+    return respawn_timeout
 
 
 def run_event_loop(screens, coroutines):
@@ -251,8 +255,8 @@ def main(canvas):
     garbage_coro = fill_orbit_with_garbage(
         game_area,
         coroutines,
-        garbage_frames,
         level,
+        garbage_frames,
         border_size
     )
 
