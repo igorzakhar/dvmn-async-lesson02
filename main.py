@@ -176,14 +176,10 @@ async def fill_orbit_with_garbage(
         _, trash_column_size = get_frame_size(current_trash_frame)
         random_column = random.randint(
             border_size,
-            columns_number - border_size
-        )
-        actual_column = min(
-            columns_number - trash_column_size - border_size,
-            random_column + trash_column_size - border_size,
+            columns_number - trash_column_size - border_size
         )
 
-        trash_coro = fly_garbage(canvas, actual_column, current_trash_frame)
+        trash_coro = fly_garbage(canvas, random_column, current_trash_frame)
         coros.append(trash_coro)
 
         garbage_respawn_timeout = calculate_respawn_timeout(level)
