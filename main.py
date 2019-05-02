@@ -22,13 +22,13 @@ GAME_OVER_FRAME = load_frame_from_file(
 )
 
 
-async def count_years(year_counter, level_duration_sec=3):
+async def count_years(year_counter, level_duration_sec=3, increment=5):
     while True:
         await sleep(level_duration_sec)
-        year_counter[0] += 1
+        year_counter[0] += increment
 
 
-async def show_year_counter(canvas, year_counter, start_year=1957):
+async def show_year_counter(canvas, year_counter, start_year):
     canvas_height, canvas_width = canvas.getmaxyx()
 
     counter_lenght = 9
@@ -102,7 +102,9 @@ async def animate_spaceship(frames, frame_container):
         await asyncio.sleep(0)
 
 
-async def run_spaceship(canvas, coros, controls, frame_container, border_size):
+async def run_spaceship(
+        canvas, coros, controls,
+        frame_container, border_size, level, start_year):
     window_height, window_width = canvas.getmaxyx()
     start_rocket_row = window_height - border_size
     start_rocket_col = window_width / 2
@@ -120,7 +122,8 @@ async def run_spaceship(canvas, coros, controls, frame_container, border_size):
 
         direction_y, direction_x, spacebar = controls()
 
-        if spacebar:
+        current_year = start_year + level[0]
+        if current_year >= 2020 and spacebar:
             shot_pos_x = frame_pos_x + round(frame_size_x / 2)
             shot_pos_y = frame_pos_y - symbol_size
             shot_coro = fire(canvas, shot_pos_y, shot_pos_x)
@@ -168,7 +171,7 @@ async def run_spaceship(canvas, coros, controls, frame_container, border_size):
 
 
 async def fill_orbit_with_garbage(
-        canvas, coros, level, frames, border_size, timeout_minimal=0.1):
+        canvas, coros, level, frames, border_size, timeout_minimal=0.3):
     _, columns_number = canvas.getmaxyx()
 
     while True:
@@ -189,7 +192,7 @@ async def fill_orbit_with_garbage(
         await sleep(garbage_respawn_timeout)
 
 
-def calculate_respawn_timeout(level, initial_timeout=5, complexity_factor=5):
+def calculate_respawn_timeout(level, initial_timeout=5, complexity_factor=20):
     timeout_step = level[0] / complexity_factor
     respawn_timeout = initial_timeout - timeout_step
     return respawn_timeout
@@ -214,6 +217,7 @@ def run_event_loop(screens, coroutines):
 
 def main(canvas):
     frame_container = []
+    start_year = 1957
     level = [0]
     curses.curs_set(False)
     canvas.nodelay(True)
@@ -268,10 +272,12 @@ def main(canvas):
         spaceship_controls,
         frame_container,
         border_size,
+        level,
+        start_year
     )
 
     count_years_coro = count_years(level)
-    show_year_counter_coro = show_year_counter(status_bar, level)
+    show_year_counter_coro = show_year_counter(status_bar, level, start_year)
 
     coroutines.append(rocket_anim_coro)
     coroutines.append(rocket_control_coro)
